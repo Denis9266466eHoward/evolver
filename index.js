@@ -266,7 +266,10 @@ async function main() {
           console.warn('[ATP] Auto-init failed: ' + (atpInitErr && atpInitErr.message || atpInitErr));
         }
 
-        // ATP: opt-in capability-gap auto-buyer (default OFF, must be explicitly enabled).
+        // ATP: capability-gap auto-buyer. Default ON as of ATP liquidity
+        // unlock; disable with EVOLVER_ATP_AUTOBUY=off. Also starts the
+        // merchant-side auto-deliver daemon so claimed ATP tasks actually
+        // call submitDelivery and settle instead of expiring.
         try {
           try {
             const { runPrompt } = require('./src/atp/cliAutobuyPrompt');
@@ -274,8 +277,8 @@ async function main() {
           } catch (promptErr) {
             console.warn('[ATP-AutoBuyer] first-run prompt failed: ' + (promptErr && promptErr.message || promptErr));
           }
-          const autoBuyRaw = (process.env.EVOLVER_ATP_AUTOBUY || 'off').toLowerCase().trim();
-          const autoBuyOn = autoBuyRaw === 'on' || autoBuyRaw === '1' || autoBuyRaw === 'true';
+          const autoBuyRaw = (process.env.EVOLVER_ATP_AUTOBUY || 'on').toLowerCase().trim();
+          const autoBuyOn = autoBuyRaw !== 'off' && autoBuyRaw !== '0' && autoBuyRaw !== 'false';
           if (autoBuyOn) {
             const hubUrl = process.env.A2A_HUB_URL || process.env.EVOMAP_HUB_URL || '';
             if (hubUrl) {
@@ -285,7 +288,20 @@ async function main() {
                 perOrderCap: Number(process.env.ATP_AUTOBUY_PER_ORDER_CAP_CREDITS) || undefined,
               });
             } else {
-              console.warn('[ATP-AutoBuyer] EVOLVER_ATP_AUTOBUY=on but no hub URL configured, skipping.');
+              console.warn('[ATP-AutoBuyer] autobuy enabled but no hub URL configured, skipping.');
+            }
+          }
+          const autoDeliverRaw = (process.env.EVOLVER_ATP_AUTODELIVER || 'on').toLowerCase().trim();
+          const autoDeliverOn = autoDeliverRaw !== 'off' && autoDeliverRaw !== '0' && autoDeliverRaw !== 'false';
+          if (autoDeliverOn) {
+            const hubUrl = process.env.A2A_HUB_URL || process.env.EVOMAP_HUB_URL || '';
+            if (hubUrl) {
+              const autoDeliver = require('./src/atp/autoDeliver');
+              autoDeliver.start({
+                pollMs: Number(process.env.ATP_AUTODELIVER_POLL_MS) || undefined,
+              });
+            } else {
+              console.warn('[ATP-AutoDeliver] autodeliver enabled but no hub URL configured, skipping.');
             }
           }
         } catch (autoBuyInitErr) {
@@ -847,6 +863,23 @@ async function main() {
       const data = await resp.json();
       const outFlag = args.find(a => typeof a === 'string' && a.startsWith('--out='));
       const safeId = String(data.skill_id || skillId).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+      // Reject safeId values that would either stay inside cwd instead of
+      // descending into skills/, or escape cwd entirely. The sanitizing regex
+      // above permits `.`, so `..` / `.` / empty survive it; `path.join('.',
+      // 'skills', '..')` collapses to `.` which turns the download directory
+      // into the user's working directory and lets Hub-supplied bundled_files
+      // overwrite `index.js`, `package.json`, etc. See GHSA-cfcj-hqpf-hccf.
+      if (
+        safeId === '' ||
+        safeId === '.' ||
+        safeId === '..' ||
+        safeId.includes('/') ||
+        safeId.includes('\\') ||
+        safeId.includes('\0')
+      ) {
+        console.error('[fetch] Hub returned an invalid skill_id: ' + JSON.stringify(safeId));
+        process.exit(1);
+      }
       let outDir;
       if (outFlag) {
         const rawOut = outFlag.slice('--out='.length);
@@ -869,7 +902,16 @@ async function main() {
         }
         outDir = resolvedOut;
       } else {
-        outDir = path.join('.', 'skills', safeId);
+        // Defense in depth: apply the same traversal check to the default
+        // branch so any remaining path-smuggling shape in `safeId` is caught.
+        const candidate = path.resolve(process.cwd(), 'skills', safeId);
+        const skillsRoot = path.resolve(process.cwd(), 'skills');
+        const rel = path.relative(skillsRoot, candidate);
+        if (rel.startsWith('..') || path.isAbsolute(rel)) {
+          console.error('[fetch] Hub-provided skill_id escapes skills/ directory: ' + JSON.stringify(safeId));
+          process.exit(1);
+        }
+        outDir = candidate;
       }
 
       if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
@@ -885,12 +927,24 @@ async function main() {
         '.yml', '.yaml',
       ]);
       const MAX_SKILL_FILE_BYTES = 512 * 1024;
+      // Even with outDir locked to skills/, a legitimate-looking skill can
+      // ship a bundled file named `package.json`, `index.js`, or any other
+      // top-level project artifact whose name collides with something the
+      // user may later copy back up. Prefix-guard the resolved path so every
+      // write stays strictly within the resolved outDir (no trailing `/..`
+      // in basename, no absolute path smuggling) and never points at cwd.
+      const resolvedOutDir = path.resolve(outDir);
+      const resolvedCwd = path.resolve(process.cwd());
 
       const bundled = Array.isArray(data.bundled_files) ? data.bundled_files : [];
       const skippedFiles = [];
       for (const file of bundled) {
         if (!file || !file.name || typeof file.content !== 'string') continue;
         const safeName = path.basename(file.name);
+        if (!safeName || safeName === '.' || safeName === '..') {
+          skippedFiles.push(String(file.name));
+          continue;
+        }
         const ext = path.extname(safeName).toLowerCase();
         if (!ALLOWED_SKILL_EXTENSIONS.has(ext)) {
           console.warn('[fetch] Skipped skill file with disallowed extension: ' + safeName);
@@ -902,7 +956,23 @@ async function main() {
           skippedFiles.push(safeName);
           continue;
         }
-        fs.writeFileSync(path.join(outDir, safeName), file.content, 'utf8');
+        const destPath = path.resolve(resolvedOutDir, safeName);
+        const relToOut = path.relative(resolvedOutDir, destPath);
+        if (relToOut.startsWith('..') || path.isAbsolute(relToOut)) {
+          console.warn('[fetch] Skipped bundled file whose resolved path escapes outDir: ' + safeName);
+          skippedFiles.push(safeName);
+          continue;
+        }
+        // Never let a bundled write touch the evolver's own cwd -- this is
+        // the concrete attack shape from GHSA-cfcj-hqpf-hccf (fetch default
+        // branch writing to `./index.js`). outDir should always be under
+        // skills/ now, but belt-and-braces keep the guarantee explicit.
+        if (path.dirname(destPath) === resolvedCwd) {
+          console.warn('[fetch] Skipped bundled file that would land in cwd: ' + safeName);
+          skippedFiles.push(safeName);
+          continue;
+        }
+        fs.writeFileSync(destPath, file.content, 'utf8');
       }
 
       console.log('[fetch] Skill downloaded to: ' + outDir);
