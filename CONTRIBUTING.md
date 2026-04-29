@@ -11,3 +11,4 @@ Thank you for contributing. Please follow these rules:
 Submit PRs with clear intent and scope.
 
 <!-- Personal note: I forked this for learning purposes. Most changes here are experimental. -->
+<!-- Reminder to self: check upstream EvoMap/evolver for updates before starting new experiments. -->
