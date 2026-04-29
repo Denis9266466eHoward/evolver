@@ -16,3 +16,4 @@ Submit PRs with clear intent and scope.
 <!-- Reminder to self: check upstream EvoMap/evolver for updates before starting new experiments. -->
 <!-- Added lint reminder since I keep forgetting to run it before committing. -->
 <!-- Added issue-first note after I spent a day on a change that turned out to be unwanted upstream. -->
+<!-- Note to self: also check node version with `node --version` if things break unexpectedly, burned by this before. -->
