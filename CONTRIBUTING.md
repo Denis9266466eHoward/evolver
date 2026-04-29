@@ -8,9 +8,11 @@ Thank you for contributing. Please follow these rules:
 - Run `node index.js` for a quick sanity check.
 - Run `npm test` before submitting if tests are available.
 - Run `npm run lint` if available to catch style issues early.
+- Open an issue before starting large changes to avoid wasted effort.
 
 Submit PRs with clear intent and scope.
 
 <!-- Personal note: I forked this for learning purposes. Most changes here are experimental. -->
 <!-- Reminder to self: check upstream EvoMap/evolver for updates before starting new experiments. -->
 <!-- Added lint reminder since I keep forgetting to run it before committing. -->
+<!-- Added issue-first note after I spent a day on a change that turned out to be unwanted upstream. -->
