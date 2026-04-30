@@ -17,3 +17,4 @@ Submit PRs with clear intent and scope.
 <!-- Added lint reminder since I keep forgetting to run it before committing. -->
 <!-- Added issue-first note after I spent a day on a change that turned out to be unwanted upstream. -->
 <!-- Note to self: also check node version with `node --version` if things break unexpectedly, burned by this before. -->
+<!-- Note to self: run `npm outdated` occasionally to catch stale dependencies, tripped over an old package version last time. -->
