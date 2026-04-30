@@ -12,6 +12,8 @@
 **[evomap.ai](https://evomap.ai)** | [문서](https://evomap.ai/wiki) | [English](README.md) | [Chinese / 中文文档](README.zh-CN.md) | [Japanese / 日本語ドキュメント](README.ja-JP.md) | [GitHub](https://github.com/EvoMap/evolver) | [릴리스](https://github.com/EvoMap/evolver/releases)
 
 > **개인 포크 메모**: 이 저장소는 개인 학습 및 실험 목적으로 포크한 것입니다. GEP 기반 진화 메커니즘을 공부하고 있으며, 특히 Gene 표현 방식과 Capsule 인코딩 부분을 집중적으로 살펴보고 있습니다. 원본 프로젝트는 [EvoMap/evolver](https://github.com/EvoMap/evolver)를 참고하세요.
+>
+> **학습 메모 (2025-06)**: arXiv 논문을 읽으면서 Gene vs. Skill 비교 실험 부분이 특히 흥미로웠습니다. CritPt 벤치마크에서 gene-evolved 시스템이 보여준 성능 향상 수치를 직접 재현해보려고 시도 중입니다. 관련 코드는 `experiments/` 폴더에 정리해두고 있습니다.
 
 ---
 
@@ -37,9 +39,4 @@
 
 ---
 
-> **"진화는 선택이 아니다. 적응하거나, 도태되거나."**
-
-**한 줄 요약**
-- **무엇인가**: AI 에이전트를 위한 [GEP](https://evomap.ai/wiki) 기반 자기 진화 엔진.
-- **어떤 문제를 해결하는가**: 즉흥적인 프롬프트 수정을 감사 가능하고 재사용 가능한 진화 에셋으로 전환.
-- **30초 만에 시작**: `npm install -g @evoma
+> **"진화는 선택이 아니다. 적응하거
