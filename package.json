@@ -1,53 +1,45 @@
 {
-  "name": "@evomap/evolver",
-  "version": "1.72.0",
-  "description": "A GEP-powered self-evolution engine for AI agents. Features automated log analysis and Genome Evolution Protocol (GEP) for auditable, reusable evolution assets.",
-  "main": "index.js",
-  "bin": {
-    "evolver": "index.js"
+  "name": "evolver",
+  "version": "1.0.0",
+  "description": "A fork of EvoMap/evolver — evolutionary algorithm mapping and optimization toolkit",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "build": "node scripts/build.js"
   },
   "keywords": [
+    "evolutionary-algorithm",
+    "genetic-algorithm",
+    "optimization",
     "evomap",
-    "ai",
-    "evolution",
-    "gep",
-    "meta-learning",
-    "self-repair",
-    "automation",
-    "agent"
+    "evolver"
   ],
-  "author": "EvoMap <team@evomap.ai>",
-  "license": "GPL-3.0-or-later",
+  "author": "",
+  "license": "GPL-3.0",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/index.js"
+    ]
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/EvoMap/evolver.git"
+    "url": "https://github.com/your-org/evolver.git"
   },
-  "homepage": "https://evomap.ai",
-  "scripts": {
-    "start": "node index.js",
-    "run": "node index.js run",
-    "solidify": "node index.js solidify",
-    "review": "node index.js review",
-    "a2a:export": "node scripts/a2a_export.js",
-    "a2a:ingest": "node scripts/a2a_ingest.js",
-    "a2a:promote": "node scripts/a2a_promote.js"
-  },
-  "dependencies": {
-    "dotenv": "^16.4.7"
-  },
-  "devDependencies": {
-    "javascript-obfuscator": "^5.4.1"
-  },
-  "files": [
-    "assets/",
-    "index.js",
-    "src/",
-    "scripts/",
-    "README.md",
-    "README.zh-CN.md",
-    "README.ja-JP.md",
-    "SKILL.md",
-    "CONTRIBUTING.md",
-    "LICENSE"
-  ]
+  "bugs": {
+    "url": "https://github.com/your-org/evolver/issues"
+  }
 }
